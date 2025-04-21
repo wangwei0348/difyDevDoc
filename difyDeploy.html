@@ -4,18 +4,18 @@
         <meta charset="utf-8"> 
         <title> DIFY框架的源码本地部署步骤，技术问题及其解决方案 </title>
         <style>
-            .p1{text-indent: 2em;white-space: pre-line}
-            .p2{text-indent: 2em;}
+            .p1{text-indent: 2em;}
+            .p2{text-indent: 2em;white-space: pre-line}
         </style>
     </head>
     <body>
 
         <h1> DIFY框架的源码本地部署步骤，技术问题及其解决方案 </h1>
-
+        <!--*******************************************************************************************************************************************************************-->    
         <h2> 前言 </h2>
-
+        <!------------------------------------------------------------------------------->    
         <p class="p1"> DIFY框架提供云服务版本和社区版本。云服务版本，注册远端云服务直接使用其创建应用，但是是民网商业化环境。使用社区版本，即开源版本，进行本地部署可供内网使用。 </p>
-
+        <!------------------------------------------------------------------------------->    
         <p class="p1"> 目前支持3种部署方式： 
             <div style="text-indent: 200px;"> 1）docker compose 部署； </div>
             <div style="text-indent: 200px;"> 2）宝塔面板部署； </div>
@@ -24,27 +24,43 @@
             此外DIFY还提供教育版和Premium版（高级版），分别针对在校学生和企业。
             本文档针对DIFY框架社区版在部署过程中遇到的技术问题和解决方案进行记录和总结。
         </p>
-            
+        <!--*******************************************************************************************************************************************************************-->    
         <h2> 硬件前置条件 </h2>
-
-        <p class="p1">
-            DIFY框架的部署有最低硬件要求：
+        <!------------------------------------------------------------------------------->    
+        <p class="p1"> DIFY框架的部署有最低硬件要求：
             <div style="text-indent: 200px;"> 1）CPU 核心数 >= 2; </div>
-            <div style="text-indent: 200px;"> 1）主存要求 >= 2; </div>
+            <div style="text-indent: 200px;"> 2）主存要求 >= 2; </div>
             对于操作系统，Linux平台需要 Docker 19.03 以上版本以及，Docker Compose 1.25.1 以上版本。如果还需要使用 OpenAI TTS(OpenAI 文本-语言-转换技术)，则需要在系统中安装<a href="https://docs.dify.ai/zh-hans/learn-more/faq/install-faq#id-15.-wen-ben-zhuan-yu-yin-yu-dao-zhe-ge-cuo-wu-zen-me-ban"> FFmpeg </a>。
         </p>
-
-
-        <h2> Docker 及 Docker Compose 部署 </h2>
-
+        <!--*******************************************************************************************************************************************************************-->    
+        <h2> Docker 及 Docker Compose 基础环境安装 </h2>
+        <!------------------------------------------------------------------------------->    
+        <p class="p1"> Docker的安装按照官方文档操作可以<a href="https://docs.docker.com/desktop/setup/install/linux/ubuntu/"> 参照 官方文档 </a>。 </p>
+        <!------------------------------------------------------------------------------->    
+        <p class="p1"> 但是在安装和使用过程中遇到过两个报错:
+            <div style="text-indent: 200px;"> 1）package docker-ce has no installation candidate; </div>
+            <div style="text-indent: 200px;"> 2）docker: Get https://registry-1.docker.io/v2/: net/http: request canceled while waiting for connection; </div>
+        </p>
+        <!------------------------------------------------------------------------------->    
+        <p class="p1"> 对于错误 1）， 参考技术帖<a href="https://itslinuxfoss.com/fix-package-docker-ce-no-installation-candidate-error/"> [How to Fix “package docker-ce has no installation candidate” Error] </a>。 </p>
+        <!------------------------------------------------------------------------------->    
+        <p class="p1"> 对于错误 2）， 有两篇有用的帖子：
+            <div style="text-indent: 200px;"> 1）<a href="https://blog.csdn.net/jhgj56/article/details/142209517"> [docker pull 报错Get “https://registry-1.docker.io/v2/“: net/http: request canceled while waiting for connection] </a>。 </div>
+            <div style="text-indent: 200px;"> 2）<a href="https://blog.csdn.net/2301_79849395/article/details/142829852"> [彻底解决docker：docker: Get https://registry-1.docker.io/v2/: net/http: request canceled 报错] </a>。 </div>
+        </p>
+        <!------------------------------------------------------------------------------->    
+        <p class="p1"> 这里采用了第1）个技术帖的方法：1）<a href="https://blog.csdn.net/jhgj56/article/details/142209517"> [docker pull 报错Get “https://registry-1.docker.io/v2/“: net/http: request canceled while waiting for connection] </a>，
+            修改了文件：/etc/docker/daemon.json文件，解决该问题，实际该问题应该是由于docker默认的镜像源在国外造成的。
+        </p>
+        <!--*******************************************************************************************************************************************************************-->    
         <h2> 克隆代码 </h2>
-
+        <!--*******************************************************************************************************************************************************************-->    
         <h2> 服务端部署 </h2>
         
             <h3 class="p2"> Prerequisite Software </h3>
             <h3 class="p2"> API 接口服务 </h3>
             <h3 class="p2"> Worker 异步队列消费服务 </h3>
-
+        <!--*******************************************************************************************************************************************************************-->    
         <h2> 前端页面部署 </h2>
         
 
