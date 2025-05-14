@@ -5,7 +5,9 @@
         <title> DIFY框架的源码本地部署步骤，技术问题及其解决方案 </title>
         <style>
             .p1{text-indent: 2em;}
-            .p2{text-indent: 2em;white-space: pre-line}
+            .p2{text-indent: 4em;}
+            .p3{text-indent: 6em;}
+            .p4{text-indent: 2em;white-space: pre-line}
         </style>
     </head>
     <body>
@@ -75,14 +77,171 @@
             <div style="text-indent: 200px;"> <img src="./difyDeployResources/PostgreSQL-Redis-Weaviate.png" alt="正确执行PostgreSQL-Redis-Weaviate部署" width="800" title="正确执行PostgreSQL-Redis-Weaviate部署"> </div>
         </p>
         <!------------------------------------------------------------------------------->    
+        <p class="p1">
+            整个DIFY框架的分为，服务端和前端页面两部，所以其部署也是分为服务端部署和前端部署，且必须先部署好服务端并启动之后，才可以部署前端。
+            下面先从服务端的部署开始。
+        </p>
         <!--*******************************************************************************************************************************************************************-->    
         <h2> 服务端部署 </h2>
-        
+        <!--*******************************************************************************************************************************************************************-->    
+        <p class="p1">
+            服务端分为两部分：
+            <ul style="list-style-type: circle;padding-left: 200px">
+                <li> API接口服务（部署） </li>
+                <li> Worker异步队列消费服务（部署） </li>
+            </ul>
+        </p>
+        <!--*************************************************************************************************************************************-->    
             <h3 class="p2"> Prerequisite Software </h3>
+        <!--*************************************************************************************************************************************-->    
+            <p class="p3"> 在dify源码部署官方文档中，提到了两个python基础工具支撑后续的服务端部署，如下表： </p>
+            <!------------------------------------------------------------------------------->    
+            <table border="1" style="margin-left: 200px;border-collapse: collapse;">  <!-- border 属性可设置边框（HTML5 建议用 CSS 替代） -->
+                <tr>            <!-- 表行 -->
+                    <th> 软件名称 </th> <!-- 表头（加粗居中） -->
+                    <th> 软件功能 </th>
+                    <th> 部署用途 </th>
+                    <th> 安装方案 </th>
+                </tr>
+                <tr>
+                    <td> pyenv </td> <!-- 表格数据 -->
+                    <td> python 版本管理工具 </td>
+                    <td> 提供整个后端服务部署的python版本支持 </td>
+                    <td> 这个工具比较非官方，只有github有，不好获得，这里使用anaconda强大的python环境（版本和包）管理工具替代 </td>
+                </tr>
+                <tr>
+                    <td> poetry </td> <!-- 表格数据 -->
+                    <td> python 包管理工具 </td>
+                    <td> 提供整个后端服务部署的python包环境，以及环境的启动 </td>
+                    <td> 这个工具可以用apt安装（安装：sudo apt install poetry；卸载：sudo apt purge poetry， sudo apt autoremove）；</br>但是为了包管理的一致性，这里不使用apt安装，采用anaconda环境中安装poetry，</br>实际上在后面的操作中发现dify在github上发布了更新，该工具被uv替代了，见下文。 </td>
+                </tr>
+                <tr>
+                    <td> uv </td> <!-- 表格数据 -->
+                    <td> 管理Python 版本、环境、第三方包 </td>
+                    <td> 从2025年4月22日的更新（gitlog）后，替代了poetry，见下文 </td>
+                    <td> pip install uv，见下文。 </td>
+                </tr>
+            </table>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                采用anaconda进行包管理，首先安装和下载anaconda：
+                <pre><code class="language-bash">
+                    # 下载安装包：
+                    $ wget https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh
+                    
+                    # 启动安装：
+                    $ bash Anaconda3-2024.10-1-Linux-x86_64.sh
+                    # 同意许可证
+                    # 输入安装路径
+                    # 最后选择no：不自动启动conda环境,详见安装官方手册<a href="https://www.anaconda.com/docs/getting-started/anaconda/install#macos-linux-installation:manual-shell-initialization"> 官方手册 </a>，选择macOS/Linux installation，注意查看manual initialization部分。
+                    # 手动启动conda：
+                    $ source anaconda3/bin/activate
+                    $ conda init --all
+                    
+                    # 通过conda创建所需python3.12（dify服务端需要python3.12）环境：
+                    # 退出conda base环境：
+                    $ conda deactivate
+                    
+                    # 创建python 3.12 独立环境命名difyEnv：
+                    $ conda create --name difyEnv python=3.12 #要注意网络，网络好这一步很快，也可以换源，这里不展开如何换源了
+                </code></pre>
+            </p>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                Poetry<a href="https://python-poetry.org/docs/#installing-with-pipx"> 官方手册 </a>的几种安装方式都采用pipx，但实际上conda创建python3.12环境中，pip3就能安装，这里采取后者：
+                <pre><code class="language-bash">
+                    # 进入刚刚使用conda创建好的difyEnv环境：
+                    $ conda activate difyEnv
+
+                    # 采用pip3安装poetry：
+                    $ pip3 install poetry
+                    # 这样安装的poetry也都在conda创建的环境中统一管理，不跑到系统目录下:
+                    $ which poetry
+                    /home/test/anaconda3/envs/difyEnv/bin/poetry
+
+                </code></pre>
+            </p>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                uv<a href="https://docs.astral.sh/uv/getting-started/installation/#standalone-installer"> 官方手册 </a>的安装方式采用pip：
+                <pre><code class="language-bash">
+                    # 进入刚刚使用conda创建好的difyEnv环境：
+                    $ conda activate difyEnv
+            
+                    # 采用pip3安装poetry：
+                    $ pip install uv
+                    # 这样安装的uv也都在conda创建的环境中统一管理，不跑到系统目录下:
+                    $ which poetry
+                    /home/wangwei/Applications/anaconda3/envs/difyEnv/bin/uv
+            
+                </code></pre>
+            </p>
+        <!--*************************************************************************************************************************************-->    
             <h3 class="p2"> API 接口服务 </h3>
+        <!--*************************************************************************************************************************************-->    
+            <p class="p3">
+                部署和启动步骤如下：
+                <pre><code class="language-bash">
+                    $ cd dify/api
+                    $ cp .env.example .env
+                    $ awk -v key="$(openssl rand -base64 42)" '/^SECRET_KEY=/ {sub(/=.*/, "=" key)} 1' .env > temp_env && mv temp_env .env
+                    $ poetry env use 3.12
+                    $ poetry install
+                </code></pre>
+            </p>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                结果发现如下报错：
+                <div style="text-indent: 200px;"> <img src="./difyDeployResources/poetryError1.png" alt="poetry执行报错" width="800" title="poetry执行报错"> </div>
+            </p>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                打开api目录下文件pyproject.toml，可以看见文件的组织方式是以section为单位的，并且确实找不到tool.poetry这个section，打开之前克隆的dify源码版本中apixia的pyproject.toml文件对比发现：
+                <div style="text-indent: 200px;"> <img src="./difyDeployResources/pyproject.toml.png" alt="pyproject.toml文件" width="1000" title="pyproject.toml文件"> </div>
+                发现两个文件完全不一样了，后来查看git hub，发现dify项目进行了更新，api目录最近一次更新就在十几个小时以前（git log 也发现最近一次的commite一个是14号一个是22号，并且22号发布了很多更新），然后发现api目录下还有一个README文件，打开里面写明了新的api接口启动方式：
+                <div style="text-indent: 200px;"> <img src="./difyDeployResources/difyGithub.png" alt="api目录更新" width="800" title="api目录更新"> </div>
+                <div style="text-indent: 200px;"> <img src="./difyDeployResources/newREADME4api.png" alt="api uv启动" width="800" title="api uv启动"> </div>
+            </p>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                按照上述README的方式，可以正确启动api接口（所以啊，别只看别人发布到官网的文档，社区版还是多留心gitHub上面的更新）：
+                <pre><code class="language-bash">
+                    $ cd dify/api
+                    $ cp .env.example .env
+                    $ sed -i "/^SECRET_KEY=/c\SECRET_KEY=$(openssl rand -base64 42)" .env
+                    $ uv sync --dev
+                    $ uv run flask db upgrade
+                    # 启动
+                    $ uv run flask run --host 0.0.0.0 --port=5001 --debug
+                </code></pre>
+            </p>
+            <!------------------------------------------------------------------------------->    
             <h3 class="p2"> Worker 异步队列消费服务 </h3>
         <!--*******************************************************************************************************************************************************************-->    
+            <!------------------------------------------------------------------------------->    
+            <p class="p3">
+                完成api接口启动后，就可以在当前目录继续完成Worker异步队列消费服务：
+                <pre><code class="language-bash">
+                    uv run celery -A app.celery worker -P gevent -c 1 --loglevel INFO -Q dataset,generation,mail,ops_trace,app_deletion
+                </code></pre>
+            </p>
+            <!------------------------------------------------------------------------------->    
+        <!--*******************************************************************************************************************************************************************-->    
         <h2> 前端页面部署 </h2>
+        <!--*******************************************************************************************************************************************************************-->    
+            <p class="p3">
+                进入web目录，进行前端页面部署：
+                <pre><code class="language-bash">
+                    $ cd dify/web
+                    $ npm i -g pnpm
+                    $ pnpm install
+                    $ pnpm run dev
+                    $ npm run build
+                    $ pnpm run start
+                </code></pre>
+            </p>
+            <!------------------------------------------------------------------------------->    
+            <p class="p3"> 以上正常输入无报错则可以通过浏览器访问dify 前端</p>
         
 
     </body>
